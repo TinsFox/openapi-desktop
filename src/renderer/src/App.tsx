@@ -4,6 +4,7 @@ import { ProjectManager } from './components/ProjectManager'
 import { ProjectDialog } from './components/ProjectDialog'
 import { APIProject } from './services/dbService'
 import { useDatabase } from './hooks/useDatabase'
+import { Button } from './components/ui/button'
 
 const App: React.FC = () => {
   const { isInitialized, error: dbError } = useDatabase()
@@ -61,18 +62,8 @@ const App: React.FC = () => {
                 )}
               </div>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => handleEditProject(selectedProject)}
-                  className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
-                >
-                  编辑项目
-                </button>
-                <button
-                  onClick={() => setSelectedProject(null)}
-                  className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
-                >
-                  返回列表
-                </button>
+                <Button onClick={() => handleEditProject(selectedProject)}>编辑项目</Button>
+                <Button onClick={() => setSelectedProject(null)}>返回列表</Button>
               </div>
             </div>
             <OpenAPIViewer initialUrl={selectedProject.serverUrl} project={selectedProject} />
