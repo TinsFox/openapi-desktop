@@ -1,0 +1,24 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Project Structure Overview
+
+这是一个基于 Electron + Vite + React + TypeScript 的桌面应用项目。项目采用了以下结构：
+
+## 主要目录
+- `src/main`: Electron 主进程代码
+  - [index.ts](mdc:src/main/index.ts) 是主进程的入口文件
+- `src/preload`: Electron 预加载脚本
+  - [index.ts](mdc:src/preload/index.ts) 定义了主进程和渲染进程之间的通信接口
+- `src/renderer`: React 渲染进程代码
+  - [src/App.tsx](mdc:src/renderer/src/App.tsx) 是 React 应用的根组件
+  - [src/main.tsx](mdc:src/renderer/src/main.tsx) 是渲染进程的入口文件
+
+## 配置文件
+- [electron.vite.config.ts](mdc:electron.vite.config.ts): Vite 构建配置
+- [electron-builder.yml](mdc:electron-builder.yml): Electron Builder 打包配置
+- [tsconfig.json](mdc:tsconfig.json): TypeScript 主配置文件
+- [tsconfig.web.json](mdc:tsconfig.web.json): 渲染进程的 TypeScript 配置
+- [tsconfig.node.json](mdc:tsconfig.node.json): 主进程的 TypeScript 配置

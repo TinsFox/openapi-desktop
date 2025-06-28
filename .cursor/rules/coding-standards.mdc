@@ -1,0 +1,30 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# 代码规范指南
+
+## TypeScript 规范
+- 严格遵循 TypeScript 类型系统
+- 配置文件：[tsconfig.json](mdc:tsconfig.json)
+- 使用接口定义数据结构
+- 避免使用 `any` 类型
+
+## React 开发规范
+- 使用函数组件和 Hooks
+- 组件文件使用 `.tsx` 扩展名
+- 组件放置在 `src/renderer/src/components` 目录
+- 每个组件一个文件
+- 组件命名采用 PascalCase
+
+## 样式规范
+- 使用 CSS Modules 或原生 CSS
+- 样式文件放在 `src/renderer/src/assets` 目录
+- 遵循 BEM 命名规范
+
+## 代码质量
+- 使用 ESLint 进行代码检查：[eslint.config.mjs](mdc:eslint.config.mjs)
+- 提交前进行代码格式化
+- 保持代码简洁，避免重复
+- 编写清晰的注释和文档

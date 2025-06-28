@@ -1,0 +1,30 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# 开发指南
+
+## 项目设置
+- 本项目使用 pnpm 作为包管理器
+- Node.js 版本要求：>= 18.0.0
+- 开发工具推荐：VS Code 或 Cursor
+
+## 开发流程
+1. 主进程开发：
+   - 在 [src/main/index.ts](mdc:src/main/index.ts) 中添加主进程逻辑
+   - 使用 Electron API 处理窗口管理、系统交互等
+
+2. 预加载脚本开发：
+   - 在 [src/preload/index.ts](mdc:src/preload/index.ts) 中定义暴露给渲染进程的 API
+   - 遵循类型安全，确保在 [index.d.ts](mdc:src/preload/index.d.ts) 中定义类型
+
+3. 渲染进程开发：
+   - React 组件开发在 `src/renderer/src/components` 目录下
+   - 使用 TypeScript 确保类型安全
+   - 样式文件位于 `src/renderer/src/assets` 目录
+
+## 构建和打包
+- 开发模式：`pnpm dev`
+- 构建应用：`pnpm build`
+- 打包配置在 [electron-builder.yml](mdc:electron-builder.yml) 中定义
