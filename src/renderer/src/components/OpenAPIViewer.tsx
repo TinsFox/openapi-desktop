@@ -360,7 +360,6 @@ const DebugPanel: React.FC<{
 
 export const OpenAPIViewer: React.FC<OpenAPIViewerProps> = ({ initialUrl = '', project }) => {
   const [spec, setSpec] = useAtom(specAtom)
-
   const [selectedEndpoint, setSelectedEndpoint] = useAtom(selectedEndpointAtom)
 
   // 初始化时，如果项目有规范内容，直接加载
@@ -419,43 +418,54 @@ export const OpenAPIViewer: React.FC<OpenAPIViewerProps> = ({ initialUrl = '', p
             </h2>
           </div>
 
-          <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg font-mono text-sm">
+          <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg font-mono text-sm mb-6">
             {selectedEndpoint.path}
           </div>
 
           {selectedEndpoint.operation.description && (
-            <p className="mt-4 text-gray-600 dark:text-gray-400">
+            <p className="mt-4 mb-6 text-gray-600 dark:text-gray-400">
               {selectedEndpoint.operation.description}
             </p>
           )}
 
-          <ParameterTable
-            parameters={selectedEndpoint.operation.parameters as OpenAPIV3.ParameterObject[]}
-          />
+          <Tabs defaultValue="preview" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="preview">参数预览</TabsTrigger>
+              <TabsTrigger value="debug">调试测试</TabsTrigger>
+            </TabsList>
 
-          {selectedEndpoint.operation.requestBody && (
-            <div className="mt-6">
-              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">请求体</h4>
-              <SchemaViewer
-                schema={
-                  (selectedEndpoint.operation.requestBody as OpenAPIV3.RequestBodyObject).content?.[
-                    'application/json'
-                  ]?.schema as OpenAPIV3.SchemaObject
-                }
+            <TabsContent value="preview" className="space-y-6 mt-6">
+              <ParameterTable
+                parameters={selectedEndpoint.operation.parameters as OpenAPIV3.ParameterObject[]}
               />
-            </div>
-          )}
 
-          <ResponseViewer responses={selectedEndpoint.operation.responses} />
+              {selectedEndpoint.operation.requestBody && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    请求体
+                  </h4>
+                  <SchemaViewer
+                    schema={
+                      (selectedEndpoint.operation.requestBody as OpenAPIV3.RequestBodyObject)
+                        .content?.['application/json']?.schema as OpenAPIV3.SchemaObject
+                    }
+                  />
+                </div>
+              )}
 
-          {/* 添加调试面板 */}
-          <DebugPanel
-            spec={spec}
-            path={selectedEndpoint.path}
-            method={selectedEndpoint.method}
-            operation={selectedEndpoint.operation}
-            project={project}
-          />
+              <ResponseViewer responses={selectedEndpoint.operation.responses} />
+            </TabsContent>
+
+            <TabsContent value="debug" className="mt-6">
+              <DebugPanel
+                spec={spec}
+                path={selectedEndpoint.path}
+                method={selectedEndpoint.method}
+                operation={selectedEndpoint.operation}
+                project={project}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
       )}
     </div>
