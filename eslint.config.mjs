@@ -23,6 +23,7 @@ export default tseslint.config(
       'react-refresh': eslintPluginReactRefresh
     },
     rules: {
+      '@typescript-eslint/explicit-function-return-type': 'off',
       ...eslintPluginReactHooks.configs.recommended.rules,
       ...eslintPluginReactRefresh.configs.vite.rules
     }

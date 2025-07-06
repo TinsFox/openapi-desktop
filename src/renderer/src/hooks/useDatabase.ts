@@ -4,6 +4,7 @@ import { dbService } from '../services/dbService'
 interface DatabaseHookResult {
   isInitialized: boolean
   error: Error | null
+  dbService: typeof dbService
 }
 
 export function useDatabase(): DatabaseHookResult {
@@ -23,5 +24,5 @@ export function useDatabase(): DatabaseHookResult {
     initDb()
   }, [])
 
-  return { isInitialized, error }
+  return { isInitialized, error, dbService }
 }

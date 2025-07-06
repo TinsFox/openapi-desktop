@@ -4,7 +4,7 @@ import { APIProject, dbService } from '../services/dbService'
 import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Plus, Trash2, Clock, Calendar } from 'lucide-react'
+import { Plus, Trash2, Clock } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,22 +60,18 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-10 w-24" />
+      <div className="space-y-3">
+        <div className="flex items-center justify-between mb-4">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-8 w-20" />
         </div>
-        <div className="grid gap-4">
+        <div className="space-y-2">
           {[1, 2].map((i) => (
-            <Card key={i}>
-              <CardContent className="p-6">
-                <div className="space-y-3">
-                  <Skeleton className="h-6 w-1/4" />
-                  <Skeleton className="h-4 w-3/4" />
-                  <div className="flex gap-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-4 w-32" />
-                  </div>
+            <Card key={i} className="border-border/40">
+              <CardContent className="p-3">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-1/3" />
+                  <Skeleton className="h-3 w-24" />
                 </div>
               </CardContent>
             </Card>
@@ -94,67 +90,60 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">API 项目</h2>
-        <Button onClick={onCreateProject} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
+    <div className="space-y-3">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-medium">API 项目</h2>
+        <Button size="sm" variant="outline" onClick={onCreateProject} className="h-8">
+          <Plus className="h-4 w-4 mr-1" />
           新建项目
         </Button>
       </div>
 
       {projects.length === 0 ? (
-        <Card>
-          <CardContent className="pt-6 pb-4 text-center">
-            <div className="space-y-2">
-              <p className="text-muted-foreground">还没有项目</p>
-              <Button
-                variant="outline"
-                onClick={onCreateProject}
-                className="flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                创建第一个项目
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="text-center py-8">
+          <p className="text-sm text-muted-foreground mb-4">还没有项目</p>
+          <Button
+            variant="outline"
+            onClick={onCreateProject}
+            className="flex items-center gap-2"
+            size="sm"
+          >
+            <Plus className="h-4 w-4" />
+            创建第一个项目
+          </Button>
+        </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="space-y-2">
           {projects.map((project) => (
             <Card
               key={project.id}
-              className="transition-colors hover:border-primary cursor-pointer"
+              className="transition-colors hover:bg-accent cursor-pointer border-border/40"
               onClick={() => onSelectProject(project)}
             >
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-semibold">{project.name}</h3>
+              <CardContent className="p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-medium truncate">{project.name}</h3>
                     {project.description && (
-                      <p className="text-muted-foreground text-sm">{project.description}</p>
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">
+                        {project.description}
+                      </p>
                     )}
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        <span>更新于 {new Date(project.updatedAt).toLocaleString()}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        <span>创建于 {new Date(project.createdAt).toLocaleString()}</span>
-                      </div>
+                    <div className="flex items-center text-xs text-muted-foreground mt-1.5">
+                      <Clock className="h-3 w-3 mr-1" />
+                      <span>{new Date(project.updatedAt).toLocaleDateString()}</span>
                     </div>
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-muted-foreground hover:text-destructive"
+                    className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
                     onClick={(e) => {
                       e.stopPropagation()
                       project.id && setProjectToDelete(project.id)
                     }}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </CardContent>
