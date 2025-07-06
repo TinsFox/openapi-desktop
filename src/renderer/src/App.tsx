@@ -4,6 +4,10 @@ import { ProjectManager } from './components/ProjectManager'
 import { ProjectDialog } from './components/ProjectDialog'
 import { APIProject } from './services/dbService'
 import { useDatabase } from './hooks/useDatabase'
+import { Button } from './components/ui/button'
+import { Card, CardContent } from './components/ui/card'
+import { Alert, AlertDescription } from './components/ui/alert'
+import { ChevronLeft, Edit } from 'lucide-react'
 
 const App: React.FC = () => {
   const { isInitialized, error: dbError } = useDatabase()
@@ -31,41 +35,54 @@ const App: React.FC = () => {
 
   if (!isInitialized) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-gray-600 dark:text-gray-400 text-lg">初始化中...</div>
-          {dbError && (
-            <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-              <p className="text-sm text-red-700 dark:text-red-300">{dbError.message}</p>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-[400px]">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              <div className="text-muted-foreground text-lg">初始化中...</div>
+              {dbError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{dbError.message}</AlertDescription>
+                </Alert>
+              )}
             </div>
-          )}
-        </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6">
         {selectedProject ? (
-          <div>
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {selectedProject.name}
-                </h1>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon" onClick={() => setSelectedProject(null)}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <h1 className="text-2xl font-bold">{selectedProject.name}</h1>
+                </div>
                 {selectedProject.description && (
-                  <p className="mt-1 text-gray-600 dark:text-gray-400">
-                    {selectedProject.description}
-                  </p>
+                  <p className="text-muted-foreground">{selectedProject.description}</p>
                 )}
               </div>
-              <div className="flex items-center gap-3">
-                <button onClick={() => handleEditProject(selectedProject)}>编辑项目</button>
-                <button onClick={() => setSelectedProject(null)}>返回列表</button>
-              </div>
+              <Button
+                variant="outline"
+                onClick={() => handleEditProject(selectedProject)}
+                className="flex items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                编辑项目
+              </Button>
             </div>
-            <OpenAPIViewer initialUrl={selectedProject.serverUrl} project={selectedProject} />
+            <Card>
+              <CardContent className="p-0">
+                <OpenAPIViewer initialUrl={selectedProject.serverUrl} project={selectedProject} />
+              </CardContent>
+            </Card>
           </div>
         ) : (
           <ProjectManager

@@ -8,6 +8,26 @@ import {
 } from '../services/openApiService'
 import { OpenAPIV3 } from 'openapi-types'
 import { APIProject, dbService } from '../services/dbService'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardHeader, CardContent } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { ChevronDown, ChevronUp } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Loader2, Send } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
 
 interface OpenAPIViewerProps {
   initialUrl?: string
@@ -18,7 +38,7 @@ type ImportMethod = 'url' | 'file' | 'content'
 type HTTPMethod = 'get' | 'post' | 'put' | 'delete' | 'patch' | 'options' | 'head'
 
 const MethodBadge: React.FC<{ method: HTTPMethod }> = ({ method }) => {
-  const colors = {
+  const variants = {
     get: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
     post: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
     put: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
@@ -29,9 +49,9 @@ const MethodBadge: React.FC<{ method: HTTPMethod }> = ({ method }) => {
   }
 
   return (
-    <span className={`px-2.5 py-0.5 rounded-md text-xs font-medium uppercase ${colors[method]}`}>
+    <Badge variant="outline" className={cn('uppercase', variants[method])}>
       {method}
-    </span>
+    </Badge>
   )
 }
 
@@ -42,21 +62,20 @@ const EndpointCard: React.FC<{
   onClick: () => void
 }> = ({ path, method, operation, onClick }) => {
   return (
-    <div
-      className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg mb-4 hover:border-blue-500 dark:hover:border-blue-400 cursor-pointer transition-colors"
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-3 mb-2">
-        <MethodBadge method={method} />
-        <span className="font-mono text-sm text-gray-600 dark:text-gray-400">{path}</span>
-      </div>
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-        {OpenAPIService.getOperationSummary(operation)}
-      </h3>
-      {operation.description && (
-        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{operation.description}</p>
-      )}
-    </div>
+    <Card className="hover:border-primary cursor-pointer transition-colors" onClick={onClick}>
+      <CardHeader className="pb-2">
+        <div className="flex items-center gap-3">
+          <MethodBadge method={method} />
+          <code className="text-sm text-muted-foreground">{path}</code>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <h3 className="text-lg font-semibold">{OpenAPIService.getOperationSummary(operation)}</h3>
+        {operation.description && (
+          <p className="mt-1 text-sm text-muted-foreground">{operation.description}</p>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
@@ -64,50 +83,30 @@ const ParameterTable: React.FC<{ parameters?: OpenAPIV3.ParameterObject[] }> = (
   if (!parameters || parameters.length === 0) return null
 
   return (
-    <div className="mt-4">
-      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">参数</h4>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-800">
-            <tr>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
-                名称
-              </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
-                位置
-              </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
-                类型
-              </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
-                必填
-              </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
-                描述
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {parameters.map((param, index) => (
-              <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {param.name}
-                </td>
-                <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">{param.in}</td>
-                <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">
-                  {(param.schema as OpenAPIV3.SchemaObject)?.type || '-'}
-                </td>
-                <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">
-                  {param.required ? '是' : '否'}
-                </td>
-                <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">
-                  {param.description || '-'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className="space-y-2">
+      <h4 className="text-sm font-medium">参数</h4>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>名称</TableHead>
+            <TableHead>位置</TableHead>
+            <TableHead>类型</TableHead>
+            <TableHead>必填</TableHead>
+            <TableHead>描述</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {parameters.map((param, index) => (
+            <TableRow key={index}>
+              <TableCell className="font-medium">{param.name}</TableCell>
+              <TableCell>{param.in}</TableCell>
+              <TableCell>{(param.schema as OpenAPIV3.SchemaObject)?.type || '-'}</TableCell>
+              <TableCell>{param.required ? '是' : '否'}</TableCell>
+              <TableCell>{param.description || '-'}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   )
 }
@@ -116,23 +115,24 @@ const SchemaViewer: React.FC<{ schema: OpenAPIV3.SchemaObject }> = ({ schema }) 
   const [isExpanded, setIsExpanded] = useState(false)
 
   return (
-    <div className="mt-4 font-mono text-sm">
-      <div className="flex items-center gap-2 mb-2">
-        <h4 className="font-medium text-gray-700 dark:text-gray-300">Schema</h4>
-        <button
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <h4 className="text-sm font-medium">Schema</h4>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 px-2"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="text-blue-500 hover:text-blue-600 dark:text-blue-400 text-xs"
         >
-          {isExpanded ? '收起' : '展开'}
-        </button>
+          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          <span className="ml-1 text-xs">{isExpanded ? '收起' : '展开'}</span>
+        </Button>
       </div>
-      <pre
-        className={`bg-gray-50 dark:bg-gray-800 rounded-md p-4 overflow-x-auto ${
-          isExpanded ? '' : 'max-h-60'
-        }`}
-      >
-        <code className="text-gray-800 dark:text-gray-200">{JSON.stringify(schema, null, 2)}</code>
-      </pre>
+      <ScrollArea className={cn('rounded-md bg-muted', !isExpanded && 'max-h-60')}>
+        <pre className="p-4">
+          <code>{JSON.stringify(schema, null, 2)}</code>
+        </pre>
+      </ScrollArea>
     </div>
   )
 }
@@ -141,35 +141,38 @@ const ResponseViewer: React.FC<{
   responses: OpenAPIV3.ResponsesObject
 }> = ({ responses }) => {
   return (
-    <div className="mt-6">
-      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">响应</h4>
+    <div className="space-y-4">
+      <h4 className="text-sm font-medium">响应</h4>
       {Object.entries(responses).map(([status, response]) => {
         const resp = response as OpenAPIV3.ResponseObject
         return (
-          <div
-            key={status}
-            className="mb-4 border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden"
-          >
-            <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                状态码: {status}
-              </span>
-              {resp.description && (
-                <span className="text-sm text-gray-600 dark:text-gray-400">{resp.description}</span>
-              )}
-            </div>
+          <Card key={status}>
+            <CardHeader className="py-2">
+              <div className="flex items-center justify-between">
+                <span className="font-medium">状态码: {status}</span>
+                {resp.description && (
+                  <span className="text-sm text-muted-foreground">{resp.description}</span>
+                )}
+              </div>
+            </CardHeader>
             {resp.content?.['application/json']?.schema && (
-              <div className="p-4">
+              <CardContent>
                 <SchemaViewer
                   schema={resp.content['application/json'].schema as OpenAPIV3.SchemaObject}
                 />
-              </div>
+              </CardContent>
             )}
-          </div>
+          </Card>
         )
       })}
     </div>
   )
+}
+
+const isParameterObject = (
+  param: OpenAPIV3.ReferenceObject | OpenAPIV3.ParameterObject
+): param is OpenAPIV3.ParameterObject => {
+  return !('$ref' in param)
 }
 
 const DebugPanel: React.FC<{
@@ -201,10 +204,15 @@ const DebugPanel: React.FC<{
     setResponse(null)
 
     try {
-      const url = OpenAPIService.buildUrl('', path, serverUrl)
-      const data = requestBody ? JSON.parse(requestBody) : undefined
-
-      const response = await OpenAPIService.sendRequest(url, method, headers, data, params)
+      const response = await OpenAPIService.sendRequest({
+        serverUrl,
+        path,
+        method,
+        params,
+        headers,
+        body: requestBody ? JSON.parse(requestBody) : undefined
+      })
+      setResponse(response)
 
       // 保存请求历史
       if (project?.id) {
@@ -224,8 +232,6 @@ const DebugPanel: React.FC<{
           }
         })
       }
-
-      setResponse(response)
     } catch (err) {
       setError(err instanceof Error ? err.message : '请求失败')
     } finally {
@@ -233,139 +239,135 @@ const DebugPanel: React.FC<{
     }
   }
 
-  const renderParameters = (type: 'path' | 'query' | 'header'): React.ReactNode[] | undefined => {
-    return operation.parameters
-      ?.filter((p): p is OpenAPIV3.ParameterObject => !('$ref' in p) && p.in === type)
-      .map((param) => (
-        <div key={param.name}>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            {param.name}
-            {param.required && <span className="text-red-500 ml-1">*</span>}
-          </label>
-          <input
-            type="text"
-            value={type === 'header' ? headers[param.name] || '' : params[param.name] || ''}
-            onChange={(e) =>
-              type === 'header'
-                ? handleHeaderChange(param.name, e.target.value)
-                : handleParamChange(param.name, e.target.value)
-            }
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-200"
-            placeholder={param.description}
-          />
-        </div>
-      ))
-  }
+  const pathAndQueryParams =
+    operation.parameters
+      ?.filter(isParameterObject)
+      .filter((param) => param.in === 'path' || param.in === 'query') || []
+
+  const headerParams =
+    operation.parameters?.filter(isParameterObject).filter((param) => param.in === 'header') || []
 
   return (
-    <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">调试面板</h3>
-        <button
-          onClick={handleSend}
-          disabled={isLoading}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            isLoading
-              ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed'
-              : 'bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700'
-          }`}
-        >
-          {isLoading ? '发送中...' : '发送请求'}
-        </button>
-      </div>
-
-      <div className="space-y-4">
-        {/* 服务器 URL */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            服务器 URL
-          </label>
-          <input
-            type="text"
+    <Card>
+      <CardHeader>
+        <div className="space-y-2">
+          <Label htmlFor="serverUrl">服务器 URL</Label>
+          <Input
+            id="serverUrl"
             value={serverUrl}
             onChange={(e) => setServerUrl(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-200"
+            placeholder="输入服务器 URL"
           />
         </div>
-
-        {/* 路径参数 */}
-        {renderParameters('path')}
-
-        {/* 查询参数 */}
-        {renderParameters('query')}
-
-        {/* 请求头 */}
-        {renderParameters('header')}
-
-        {/* 请求体 */}
-        {operation.requestBody && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="params" className="space-y-4">
+          <TabsList className="w-full">
+            <TabsTrigger value="params" className="flex-1">
+              参数
+            </TabsTrigger>
+            <TabsTrigger value="headers" className="flex-1">
+              请求头
+            </TabsTrigger>
+            <TabsTrigger value="body" className="flex-1">
               请求体
-            </label>
-            <textarea
-              value={requestBody}
-              onChange={(e) => setRequestBody(e.target.value)}
-              className="w-full h-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-mono dark:bg-gray-700 dark:text-gray-200"
-              placeholder="输入 JSON 格式的请求体"
-            />
-          </div>
-        )}
+            </TabsTrigger>
+          </TabsList>
 
-        {/* 响应区域 */}
-        {(response || error) && (
-          <div className="mt-6">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">响应</h4>
-            {error ? (
-              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+          <TabsContent value="params" className="space-y-4">
+            {pathAndQueryParams.map((param) => (
+              <div key={param.name} className="space-y-2">
+                <Label htmlFor={param.name}>
+                  {param.name}
+                  {param.required && <span className="text-destructive ml-1">*</span>}
+                </Label>
+                <Input
+                  id={param.name}
+                  value={params[param.name] || ''}
+                  onChange={(e) => handleParamChange(param.name, e.target.value)}
+                  placeholder={param.description}
+                />
               </div>
-            ) : (
-              response && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-md text-xs font-medium ${
-                        response.status >= 200 && response.status < 300
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                          : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                      }`}
-                    >
-                      {response.status} {response.statusText}
-                    </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {response.duration}ms
-                    </span>
-                  </div>
+            ))}
+          </TabsContent>
 
-                  <div>
-                    <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      响应头
-                    </h5>
-                    <pre className="bg-gray-50 dark:bg-gray-900 rounded-md p-4 overflow-x-auto text-sm">
-                      <code className="text-gray-800 dark:text-gray-200">
-                        {JSON.stringify(response.headers, null, 2)}
-                      </code>
-                    </pre>
-                  </div>
+          <TabsContent value="headers" className="space-y-4">
+            {headerParams.map((param) => (
+              <div key={param.name} className="space-y-2">
+                <Label htmlFor={param.name}>
+                  {param.name}
+                  {param.required && <span className="text-destructive ml-1">*</span>}
+                </Label>
+                <Input
+                  id={param.name}
+                  value={headers[param.name] || ''}
+                  onChange={(e) => handleHeaderChange(param.name, e.target.value)}
+                  placeholder={param.description}
+                />
+              </div>
+            ))}
+          </TabsContent>
 
-                  <div>
-                    <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      响应体
-                    </h5>
-                    <pre className="bg-gray-50 dark:bg-gray-900 rounded-md p-4 overflow-x-auto text-sm">
-                      <code className="text-gray-800 dark:text-gray-200">
-                        {JSON.stringify(response.data, null, 2)}
-                      </code>
-                    </pre>
-                  </div>
-                </div>
-              )
+          <TabsContent value="body">
+            {operation.requestBody && (
+              <div className="space-y-2">
+                <Label htmlFor="requestBody">请求体</Label>
+                <Textarea
+                  id="requestBody"
+                  value={requestBody}
+                  onChange={(e) => setRequestBody(e.target.value)}
+                  placeholder="输入 JSON 格式的请求体"
+                  className="font-mono h-40"
+                />
+              </div>
             )}
+          </TabsContent>
+        </Tabs>
+
+        {error && (
+          <Alert variant="destructive" className="mt-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="flex justify-end mt-4">
+          <Button onClick={handleSend} disabled={isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading ? (
+              '发送中...'
+            ) : (
+              <>
+                <Send className="mr-2 h-4 w-4" />
+                发送请求
+              </>
+            )}
+          </Button>
+        </div>
+
+        {response && (
+          <div className="mt-4 space-y-2">
+            <h4 className="text-sm font-medium">响应</h4>
+            <Card>
+              <CardHeader className="py-2">
+                <div className="flex items-center justify-between">
+                  <Badge variant={response.status < 400 ? 'default' : 'destructive'}>
+                    状态码: {response.status}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">耗时: {response.duration}ms</span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-60 rounded-md bg-muted">
+                  <pre className="p-4">
+                    <code>{JSON.stringify(response.data, null, 2)}</code>
+                  </pre>
+                </ScrollArea>
+              </CardContent>
+            </Card>
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -476,31 +478,28 @@ export const OpenAPIViewer: React.FC<OpenAPIViewerProps> = ({ initialUrl = '', p
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
           <div className="flex gap-2 mb-4">
             <button
-              className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                importMethod === 'url'
+              className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${importMethod === 'url'
                   ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
                   : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
-              }`}
+                }`}
               onClick={() => setImportMethod('url')}
             >
               URL
             </button>
             <button
-              className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                importMethod === 'file'
+              className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${importMethod === 'file'
                   ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
                   : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
-              }`}
+                }`}
               onClick={() => setImportMethod('file')}
             >
               文件
             </button>
             <button
-              className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                importMethod === 'content'
+              className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${importMethod === 'content'
                   ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
                   : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
-              }`}
+                }`}
               onClick={() => setImportMethod('content')}
             >
               内容
@@ -546,11 +545,10 @@ export const OpenAPIViewer: React.FC<OpenAPIViewerProps> = ({ initialUrl = '', p
             <button
               onClick={handleLoadSpec}
               disabled={isLoading}
-              className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                isLoading
+              className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-colors ${isLoading
                   ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed'
                   : 'bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700'
-              }`}
+                }`}
             >
               {isLoading ? '导入中...' : '导入'}
             </button>

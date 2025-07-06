@@ -1,6 +1,20 @@
 import React, { useState } from 'react'
 import { APIProject, dbService } from '../services/dbService'
 import { OpenAPIService } from '../services/openApiService'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Alert } from '@/components/ui/alert'
+import { Label } from '@/components/ui/label'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { FileText, Globe, Code, Loader2 } from 'lucide-react'
 
 interface ProjectDialogProps {
   project?: APIProject
@@ -79,143 +93,99 @@ export const ProjectDialog: React.FC<ProjectDialogProps> = ({ project, onClose, 
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-lg">
-        <div className="p-6">
-          <h2 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-4">
-            {project ? '编辑项目' : '新建项目'}
-          </h2>
+    <Dialog open={true} onOpenChange={() => onClose()}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>{project ? '编辑项目' : '新建项目'}</DialogTitle>
+        </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                项目名称
-              </label>
-              <input
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">项目名称</Label>
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="输入项目名称"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">项目描述</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="输入项目描述（可选）"
+              className="resize-none"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>OpenAPI 规范</Label>
+            <ToggleGroup
+              type="single"
+              value={importMethod}
+              onValueChange={(value) =>
+                value && setImportMethod(value as 'url' | 'file' | 'content')
+              }
+              className="justify-start"
+            >
+              <ToggleGroupItem value="url" className="flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                URL
+              </ToggleGroupItem>
+              <ToggleGroupItem value="file" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                文件
+              </ToggleGroupItem>
+              <ToggleGroupItem value="content" className="flex items-center gap-2">
+                <Code className="h-4 w-4" />
+                内容
+              </ToggleGroupItem>
+            </ToggleGroup>
+
+            {importMethod === 'url' && (
+              <Input
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-200"
-                placeholder="输入项目名称"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="输入 OpenAPI/Swagger 文档 URL"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                项目描述
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full h-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-200 resize-none"
-                placeholder="输入项目描述（可选）"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                OpenAPI 规范
-              </label>
-              <div className="flex gap-2 mb-3">
-                <button
-                  type="button"
-                  className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    importMethod === 'url'
-                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                      : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
-                  }`}
-                  onClick={() => setImportMethod('url')}
-                >
-                  URL
-                </button>
-                <button
-                  type="button"
-                  className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    importMethod === 'file'
-                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                      : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
-                  }`}
-                  onClick={() => setImportMethod('file')}
-                >
-                  文件
-                </button>
-                <button
-                  type="button"
-                  className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    importMethod === 'content'
-                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                      : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
-                  }`}
-                  onClick={() => setImportMethod('content')}
-                >
-                  内容
-                </button>
-              </div>
-
-              {importMethod === 'url' && (
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-200"
-                  placeholder="输入 OpenAPI/Swagger 文档 URL"
-                />
-              )}
-
-              {importMethod === 'file' && (
-                <input
-                  type="file"
-                  accept=".json,.yaml,.yml"
-                  onChange={handleFileSelect}
-                  className="block w-full text-sm text-gray-500 dark:text-gray-400
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-md file:border-0
-                    file:text-sm file:font-medium
-                    file:bg-blue-50 file:text-blue-700
-                    file:dark:bg-blue-900/20 file:dark:text-blue-300
-                    hover:file:bg-blue-100 hover:file:dark:bg-blue-900/30"
-                />
-              )}
-
-              {importMethod === 'content' && (
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  className="w-full h-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-mono dark:bg-gray-700 dark:text-gray-200"
-                  placeholder="粘贴 OpenAPI/Swagger 文档内容"
-                />
-              )}
-            </div>
-
-            {error && (
-              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-              </div>
             )}
 
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
-              >
-                取消
-              </button>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className={`px-4 py-2 rounded-md text-sm font-medium text-white transition-colors ${
-                  isLoading
-                    ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
-                    : 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700'
-                }`}
-              >
-                {isLoading ? '保存中...' : '保存'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+            {importMethod === 'file' && (
+              <Input
+                type="file"
+                accept=".json,.yaml,.yml"
+                onChange={handleFileSelect}
+                className="cursor-pointer"
+              />
+            )}
+
+            {importMethod === 'content' && (
+              <Textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="粘贴 OpenAPI/Swagger 文档内容"
+                className="font-mono h-40"
+              />
+            )}
+          </div>
+
+          {error && <Alert variant="destructive">{error}</Alert>}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              取消
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isLoading ? '保存中...' : '保存'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }
