@@ -1,23 +1,32 @@
-import { createBrowserRouter, RouteObject } from 'react-router'
-import { MainLayout } from './components/layouts/main-layout'
-import { Welcome } from './pages/welcome'
-import { Project } from './pages/project'
+import { createBrowserRouter } from 'react-router'
+import { ProjectLayout } from '@/components/layouts/project-layout'
+import { Project } from '@/pages/project'
+import { ProjectList } from '@/pages/ProjectList'
+import { RootLayout } from '@/components/layouts/root'
 
-const routes: RouteObject[] = [
+export const router = createBrowserRouter([
   {
     path: '/',
-    Component: MainLayout,
+    Component: RootLayout,
     children: [
       {
         index: true,
-        Component: Welcome
+        Component: ProjectList
       },
       {
-        path: 'projects/:projectId',
-        Component: Project
+        path: 'project-list',
+        Component: ProjectList
+      },
+      {
+        path: 'project/:projectId',
+        Component: ProjectLayout,
+        children: [
+          {
+            index: true,
+            Component: Project
+          }
+        ]
       }
     ]
   }
-]
-
-export const router = createBrowserRouter(routes)
+])

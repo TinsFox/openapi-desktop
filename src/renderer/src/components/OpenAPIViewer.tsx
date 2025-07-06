@@ -1,7 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   OpenAPIService,
-  OpenAPIError,
   OpenAPISpec,
   OpenAPIOperation,
   APIResponse
@@ -28,32 +27,17 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Send } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import { selectedEndpointAtom, specAtom } from '@/atoms/spec-atom'
+import { useAtom } from 'jotai'
+import { MethodBadge } from './MethodBadge'
+import { HTTPMethod } from '@/types/http'
 
 interface OpenAPIViewerProps {
   initialUrl?: string
   project?: APIProject
 }
 
-type ImportMethod = 'url' | 'file' | 'content'
-type HTTPMethod = 'get' | 'post' | 'put' | 'delete' | 'patch' | 'options' | 'head'
-
-const MethodBadge: React.FC<{ method: HTTPMethod }> = ({ method }) => {
-  const variants = {
-    get: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-    post: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-    put: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
-    delete: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
-    patch: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
-    options: 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300',
-    head: 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300'
-  }
-
-  return (
-    <Badge variant="outline" className={cn('uppercase', variants[method])}>
-      {method}
-    </Badge>
-  )
-}
+export type ImportMethod = 'url' | 'file' | 'content'
 
 const EndpointCard: React.FC<{
   path: string
@@ -205,12 +189,10 @@ const DebugPanel: React.FC<{
 
     try {
       const response = await OpenAPIService.sendRequest({
-        serverUrl,
-        path,
-        method,
-        params,
+        url: serverUrl,
+        method: method.toLowerCase(),
         headers,
-        body: requestBody ? JSON.parse(requestBody) : undefined
+        data: requestBody ? JSON.parse(requestBody) : undefined
       })
       setResponse(response)
 
@@ -372,18 +354,9 @@ const DebugPanel: React.FC<{
 }
 
 export const OpenAPIViewer: React.FC<OpenAPIViewerProps> = ({ initialUrl = '', project }) => {
-  const [importMethod, setImportMethod] = useState<ImportMethod>('url')
-  const [input, setInput] = useState(initialUrl)
-  const [spec, setSpec] = useState<OpenAPISpec | null>(null)
-  console.log('spec: ', spec)
-  const [error, setError] = useState<OpenAPIError | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [selectedEndpoint, setSelectedEndpoint] = useState<{
-    path: string
-    method: HTTPMethod
-    operation: OpenAPIOperation
-  } | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [spec, setSpec] = useAtom(specAtom)
+
+  const [selectedEndpoint, setSelectedEndpoint] = useAtom(selectedEndpointAtom)
 
   // 初始化时，如果项目有规范内容，直接加载
   useEffect(() => {
@@ -428,244 +401,100 @@ export const OpenAPIViewer: React.FC<OpenAPIViewerProps> = ({ initialUrl = '', p
       setIsLoading(false)
     }
   }
+  if (!selectedEndpoint)
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 text-center w-full h-[calc(100vh-2rem)] flex items-center justify-center">
+        <p className="text-gray-600 dark:text-gray-400">选择左侧的接口以查看详细信息</p>
+      </div>
+    )
+  return (
+    <div className="lg:col-span-8 xl:col-span-9 w-full">
+      {selectedEndpoint && spec && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <MethodBadge method={selectedEndpoint.method} />
+            <h2 className="text-xl font-medium text-gray-900 dark:text-gray-100">
+              {OpenAPIService.getOperationSummary(selectedEndpoint.operation)}
+            </h2>
+          </div>
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
-    const file = event.target.files?.[0]
-    if (!file) return
+          <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg font-mono text-sm">
+            {selectedEndpoint.path}
+          </div>
 
-    setIsLoading(true)
-    setError(null)
+          {selectedEndpoint.operation.description && (
+            <p className="mt-4 text-gray-600 dark:text-gray-400">
+              {selectedEndpoint.operation.description}
+            </p>
+          )}
 
-    try {
-      const content = await file.text()
-      const result = await OpenAPIService.loadAndParseSpec(content)
-      if (result.error) {
-        setError(result.error)
-      } else if (result.spec) {
-        setSpec(result.spec)
-        setSelectedEndpoint(null)
-        setInput(content)
+          <ParameterTable
+            parameters={selectedEndpoint.operation.parameters as OpenAPIV3.ParameterObject[]}
+          />
 
-        // 如果是在项目中，更新项目的规范内容
-        if (project?.id) {
-          await dbService.updateProject(project.id, {
-            spec: result.spec,
-            serverUrl: undefined
-          })
-        }
-      }
-    } catch (err) {
-      setError({
-        message: '读取文件失败',
-        details: err instanceof Error ? err.message : '未知错误'
-      })
-    } finally {
-      setIsLoading(false)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-    }
-  }
+          {selectedEndpoint.operation.requestBody && (
+            <div className="mt-6">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">请求体</h4>
+              <SchemaViewer
+                schema={
+                  (selectedEndpoint.operation.requestBody as OpenAPIV3.RequestBodyObject).content?.[
+                    'application/json'
+                  ]?.schema as OpenAPIV3.SchemaObject
+                }
+              />
+            </div>
+          )}
 
-  const handleChooseFile = (): void => {
-    fileInputRef.current?.click()
-  }
+          <ResponseViewer responses={selectedEndpoint.operation.responses} />
+
+          {/* 添加调试面板 */}
+          <DebugPanel
+            spec={spec}
+            path={selectedEndpoint.path}
+            method={selectedEndpoint.method}
+            operation={selectedEndpoint.operation}
+            project={project}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface SpecListProps {
+  spec: OpenAPISpec
+}
+export function SpecList({ spec }: SpecListProps) {
+  const [selectedEndpoint, setSelectedEndpoint] = useAtom(selectedEndpointAtom)
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      {/* 左侧面板 */}
-      <div className="lg:col-span-4 xl:col-span-3">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-          <div className="flex gap-2 mb-4">
-            <button
-              className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${importMethod === 'url'
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                  : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
-                }`}
-              onClick={() => setImportMethod('url')}
-            >
-              URL
-            </button>
-            <button
-              className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${importMethod === 'file'
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                  : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
-                }`}
-              onClick={() => setImportMethod('file')}
-            >
-              文件
-            </button>
-            <button
-              className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${importMethod === 'content'
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                  : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
-                }`}
-              onClick={() => setImportMethod('content')}
-            >
-              内容
-            </button>
-          </div>
+    <div className="space-y-2">
+      {spec &&
+        Object.entries(spec.paths).map(([path, pathItem]) => {
+          const methods = Object.entries(pathItem as OpenAPIV3.PathItemObject).filter(([method]) =>
+            ['get', 'post', 'put', 'delete', 'patch', 'options', 'head'].includes(method)
+          )
 
-          <div className="space-y-4">
-            {importMethod === 'url' && (
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="输入 OpenAPI/Swagger 文档 URL"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-              />
-            )}
-            {importMethod === 'file' && (
-              <>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".json,.yaml,.yml"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-                <button
-                  onClick={handleChooseFile}
-                  className="w-full px-4 py-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-600 dark:text-gray-400 hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
-                >
-                  选择 OpenAPI/Swagger 文件
-                </button>
-              </>
-            )}
-            {importMethod === 'content' && (
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="粘贴 OpenAPI/Swagger 文档内容"
-                className="w-full h-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 resize-none"
-              />
-            )}
-
-            <button
-              onClick={handleLoadSpec}
-              disabled={isLoading}
-              className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-colors ${isLoading
-                  ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700'
-                }`}
-            >
-              {isLoading ? '导入中...' : '导入'}
-            </button>
-          </div>
-
-          {error && (
-            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-              <h3 className="text-sm font-medium text-red-800 dark:text-red-400">
-                {error.message}
-              </h3>
-              {error.details && (
-                <p className="mt-1 text-sm text-red-700 dark:text-red-300">{error.details}</p>
-              )}
-            </div>
-          )}
-
-          {spec && (
-            <div className="mt-6">
-              <div className="mb-4">
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                  {spec.info.title}
-                </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  版本: {spec.info.version}
-                </p>
-                {spec.info.description && (
-                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                    {spec.info.description}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                {Object.entries(spec.paths).map(([path, pathItem]) => {
-                  const methods = Object.entries(pathItem as OpenAPIV3.PathItemObject).filter(
-                    ([method]) =>
-                      ['get', 'post', 'put', 'delete', 'patch', 'options', 'head'].includes(method)
-                  )
-
-                  return methods.map(([method, operation]) => (
-                    <EndpointCard
-                      key={`${path}-${method}`}
-                      path={path}
-                      method={method as HTTPMethod}
-                      operation={operation as OpenAPIOperation}
-                      onClick={() =>
-                        setSelectedEndpoint({
-                          path,
-                          method: method as HTTPMethod,
-                          operation: operation as OpenAPIOperation
-                        })
-                      }
-                    />
-                  ))
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 右侧面板 */}
-      <div className="lg:col-span-8 xl:col-span-9">
-        {selectedEndpoint && spec ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <MethodBadge method={selectedEndpoint.method} />
-              <h2 className="text-xl font-medium text-gray-900 dark:text-gray-100">
-                {OpenAPIService.getOperationSummary(selectedEndpoint.operation)}
-              </h2>
-            </div>
-
-            <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg font-mono text-sm">
-              {selectedEndpoint.path}
-            </div>
-
-            {selectedEndpoint.operation.description && (
-              <p className="mt-4 text-gray-600 dark:text-gray-400">
-                {selectedEndpoint.operation.description}
-              </p>
-            )}
-
-            <ParameterTable
-              parameters={selectedEndpoint.operation.parameters as OpenAPIV3.ParameterObject[]}
+          return methods.map(([method, operation]) => (
+            <EndpointCard
+              key={`${path}-${method}`}
+              path={path}
+              method={method as HTTPMethod}
+              operation={operation as OpenAPIOperation}
+              onClick={() => {
+                if (selectedEndpoint?.path === path && selectedEndpoint?.method === method) {
+                  setSelectedEndpoint(null)
+                } else {
+                  setSelectedEndpoint({
+                    path,
+                    method: method as HTTPMethod,
+                    operation: operation as OpenAPIOperation
+                  })
+                }
+              }}
             />
-
-            {selectedEndpoint.operation.requestBody && (
-              <div className="mt-6">
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  请求体
-                </h4>
-                <SchemaViewer
-                  schema={
-                    (selectedEndpoint.operation.requestBody as OpenAPIV3.RequestBodyObject)
-                      .content?.['application/json']?.schema as OpenAPIV3.SchemaObject
-                  }
-                />
-              </div>
-            )}
-
-            <ResponseViewer responses={selectedEndpoint.operation.responses} />
-
-            {/* 添加调试面板 */}
-            <DebugPanel
-              spec={spec}
-              path={selectedEndpoint.path}
-              method={selectedEndpoint.method}
-              operation={selectedEndpoint.operation}
-              project={project}
-            />
-          </div>
-        ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 text-center">
-            <p className="text-gray-600 dark:text-gray-400">选择左侧的接口以查看详细信息</p>
-          </div>
-        )}
-      </div>
+          ))
+        })}
     </div>
   )
 }

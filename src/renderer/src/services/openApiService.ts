@@ -32,7 +32,6 @@ export class OpenAPIService {
     try {
       let content: string = input
 
-      // 如果是 URL，尝试获取内容
       if (input.startsWith('http://') || input.startsWith('https://')) {
         const response = await fetch(input)
         if (!response.ok) {
@@ -41,15 +40,14 @@ export class OpenAPIService {
         content = await response.text()
       }
 
-      // 尝试解析 JSON
       try {
         return { spec: JSON.parse(content) }
       } catch (jsonError) {
-        // 如果 JSON 解析失败，尝试解析 YAML
+        console.log('jsonError: ', jsonError)
         try {
           return { spec: yaml.load(content) as OpenAPISpec }
         } catch (yamlError) {
-          throw new Error('无法解析规范文件，请确保是有效的 JSON 或 YAML 格式')
+          throw new Error(`无法解析规范文件，请确保是有效的 JSON 或 YAML 格式: ${yamlError}`)
         }
       }
     } catch (error) {
@@ -104,13 +102,14 @@ export class OpenAPIService {
     return formattedPath
   }
 
-  static async sendRequest(
-    url: string,
-    method: string,
-    headers: Record<string, string> = {},
-    data?: any,
+  static async sendRequest(options: {
+    url: string
+    method: string
+    headers: Record<string, string>
+    data?: any
     params?: Record<string, string>
-  ): Promise<APIResponse> {
+  }): Promise<APIResponse> {
+    const { url, method, headers, data, params } = options
     const startTime = Date.now()
 
     try {

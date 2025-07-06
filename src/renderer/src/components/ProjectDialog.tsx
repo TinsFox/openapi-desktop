@@ -6,7 +6,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter
+  DialogFooter,
+  DialogTrigger,
+  DialogClose
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,22 +16,21 @@ import { Textarea } from '@/components/ui/textarea'
 import { Alert } from '@/components/ui/alert'
 import { Label } from '@/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { FileText, Globe, Code, Loader2 } from 'lucide-react'
+import { FileText, Globe, Code, Loader2, Plus } from 'lucide-react'
 
 interface ProjectDialogProps {
   project?: APIProject
-  onClose: () => void
-  onSave: (project: APIProject) => void
+  children?: React.ReactNode
 }
 
-export const ProjectDialog: React.FC<ProjectDialogProps> = ({ project, onClose, onSave }) => {
+export const ProjectDialog: React.FC<ProjectDialogProps> = ({ project, children }) => {
   const [name, setName] = useState(project?.name || '')
   const [description, setDescription] = useState(project?.description || '')
   const [importMethod, setImportMethod] = useState<'url' | 'file' | 'content'>('url')
   const [input, setInput] = useState(project?.serverUrl || '')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
+  const [open, setOpen] = useState(false)
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
     if (!name.trim()) {
@@ -66,13 +67,10 @@ export const ProjectDialog: React.FC<ProjectDialogProps> = ({ project, onClose, 
 
       if (project?.id) {
         await dbService.updateProject(project.id, projectData)
-        onSave({ ...project, ...projectData })
       } else {
-        const newProject = await dbService.createProject(projectData)
-        onSave(newProject)
+        await dbService.createProject(projectData)
       }
-
-      onClose()
+      setOpen(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : '保存项目失败')
     } finally {
@@ -93,7 +91,15 @@ export const ProjectDialog: React.FC<ProjectDialogProps> = ({ project, onClose, 
   }
 
   return (
-    <Dialog open={true} onOpenChange={() => onClose()}>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {children || (
+          <Button size="sm" variant="outline" className="h-8" onClick={() => setOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            新建项目
+          </Button>
+        )}
+      </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{project ? '编辑项目' : '新建项目'}</DialogTitle>
@@ -176,9 +182,11 @@ export const ProjectDialog: React.FC<ProjectDialogProps> = ({ project, onClose, 
           {error && <Alert variant="destructive">{error}</Alert>}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              取消
-            </Button>
+            <DialogClose asChild>
+              <Button size="sm" variant="outline" className="h-8">
+                取消
+              </Button>
+            </DialogClose>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isLoading ? '保存中...' : '保存'}

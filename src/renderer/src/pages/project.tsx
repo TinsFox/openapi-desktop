@@ -1,19 +1,17 @@
 import { useParams } from 'react-router'
 import { useState, useEffect } from 'react'
 import { APIProject } from '@/services/dbService'
-import { Workspace } from '@/components/home/work-space'
-import { ProjectDialog } from '@/components/ProjectDialog'
+
 import { useDatabase } from '@/hooks/useDatabase'
+import { OpenAPIViewer } from '@/components/OpenAPIViewer'
 
 export function Project() {
   const { projectId } = useParams()
   const { dbService } = useDatabase()
   const [project, setProject] = useState<APIProject | null>(null)
-  const [showProjectDialog, setShowProjectDialog] = useState(false)
 
   useEffect(() => {
     if (projectId && dbService) {
-      // 从数据库加载项目数据
       const id = parseInt(projectId, 10)
       if (!isNaN(id)) {
         dbService.getProject(id).then((project) => {
@@ -22,15 +20,6 @@ export function Project() {
       }
     }
   }, [projectId, dbService])
-
-  const handleEditProject = (): void => {
-    setShowProjectDialog(true)
-  }
-
-  const handleSaveProject = (updatedProject: APIProject): void => {
-    setProject(updatedProject)
-    setShowProjectDialog(false)
-  }
 
   if (!project) {
     return (
@@ -44,15 +33,8 @@ export function Project() {
   }
 
   return (
-    <>
-      <Workspace project={project} onEdit={handleEditProject} />
-      {showProjectDialog && (
-        <ProjectDialog
-          project={project}
-          onClose={() => setShowProjectDialog(false)}
-          onSave={handleSaveProject}
-        />
-      )}
-    </>
+    <div className="min-h-screen bg-background flex">
+      <OpenAPIViewer initialUrl={project.serverUrl} project={project} />
+    </div>
   )
 }
