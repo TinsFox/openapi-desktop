@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
 import { APIProject, dbService } from '../services/dbService'
 
 interface ProjectManagerProps {
@@ -64,12 +65,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">API 项目</h2>
-        <button
-          onClick={onCreateProject}
-          className="px-3 py-1.5 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
-        >
-          新建项目
-        </button>
+        <Button onClick={onCreateProject}>新建项目</Button>
       </div>
 
       {projects.length === 0 ? (
