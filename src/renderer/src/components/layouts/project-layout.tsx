@@ -19,6 +19,7 @@ import { GalleryVerticalEnd } from 'lucide-react'
 import { SpecList } from '../OpenAPIViewer'
 import { specAtom } from '@/atoms/spec-atom'
 import { useAtom } from 'jotai'
+import { ScrollArea, ScrollBar } from '../ui/scroll-area'
 
 export function ProjectLayout() {
   const [selectedProject] = useState<APIProject | null>(null)
@@ -60,15 +61,18 @@ export function ProjectLayout() {
       </Sidebar>
 
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+        <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 border-b px-4 bg-background">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
           <div className="text-sm font-medium">{getPageTitle()}</div>
         </header>
 
-        <div className="flex-1 p-4 w-full">
-          <Outlet />
-        </div>
+        <ScrollArea className="flex h-[calc(100vh-4rem)] flex-col gap-4 p-2 pt-0 sm:h-[calc(100vh-4rem)] sm:p-4">
+          <div className="p-2 sm:py-4">
+            <Outlet />
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
       </SidebarInset>
     </SidebarProvider>
   )

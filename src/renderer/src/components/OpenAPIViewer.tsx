@@ -112,7 +112,12 @@ const SchemaViewer: React.FC<{ schema: OpenAPIV3.SchemaObject }> = ({ schema }) 
           <span className="ml-1 text-xs">{isExpanded ? '收起' : '展开'}</span>
         </Button>
       </div>
-      <ScrollArea className={cn('rounded-md bg-muted', !isExpanded && 'max-h-60')}>
+      <ScrollArea
+        className={cn(
+          'rounded-md bg-muted transition-all duration-200 overflow-y-auto',
+          isExpanded ? 'max-h-96' : 'max-h-60'
+        )}
+      >
         <pre className="p-4">
           <code>{JSON.stringify(schema, null, 2)}</code>
         </pre>
@@ -402,11 +407,7 @@ export const OpenAPIViewer: React.FC<OpenAPIViewerProps> = ({ initialUrl = '', p
     }
   }
   if (!selectedEndpoint)
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 text-center w-full h-[calc(100vh-2rem)] flex items-center justify-center">
-        <p className="text-gray-600 dark:text-gray-400">选择左侧的接口以查看详细信息</p>
-      </div>
-    )
+    return <p className="text-gray-600 dark:text-gray-400">选择左侧的接口以查看详细信息</p>
   return (
     <div className="lg:col-span-8 xl:col-span-9 w-full">
       {selectedEndpoint && spec && (

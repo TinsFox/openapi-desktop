@@ -23,7 +23,7 @@ export function Project() {
 
   if (!project) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-3rem)]">
+      <div className="flex items-center justify-center">
         <div className="text-center space-y-2">
           <h2 className="text-lg font-medium">项目不存在</h2>
           <p className="text-sm text-muted-foreground">请检查项目 ID 是否正确</p>
@@ -32,9 +32,5 @@ export function Project() {
     )
   }
 
-  return (
-    <div className="min-h-screen bg-background flex">
-      <OpenAPIViewer initialUrl={project.serverUrl} project={project} />
-    </div>
-  )
+  return <OpenAPIViewer initialUrl={project.serverUrl} project={project} />
 }
